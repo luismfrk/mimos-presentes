@@ -1,0 +1,6 @@
+import {supabase,isSupabaseConfigured} from '../lib/supabase';import {demoCategories,demoProducts} from '../lib/demo';import type {Category,Product} from '../types'
+const imageUrl=(path:string)=>path.startsWith('http')?path:supabase?.storage.from('product-images').getPublicUrl(path).data.publicUrl||path
+export async function getCategories():Promise<Category[]>{if(!supabase)return demoCategories;const {data,error}=await supabase.from('categories').select('*').eq('active',true).order('sort_order');if(error)throw error;return data||[]}
+export async function getProducts(publicOnly=true):Promise<Product[]>{if(!supabase)return demoProducts;let query=supabase.from('products').select('*,category:categories(*),images:product_images(*)').order('created_at',{ascending:false});if(publicOnly)query=query.eq('published',true);const {data,error}=await query;if(error)throw error;return (data||[]).map(p=>({...p,images:p.images?.sort((a:{sort_order:number},b:{sort_order:number})=>a.sort_order-b.sort_order).map((i:{storage_path:string})=>({...i,url:imageUrl(i.storage_path)}))})) as Product[]}
+export async function getProduct(id:string){return (await getProducts()).find(p=>p.id===id||p.slug===id)||null}
+export {isSupabaseConfigured}

@@ -1,0 +1,2 @@
+import {Navigate,Outlet} from 'react-router-dom';import {useAuth} from '../context/AuthContext'
+export function ProtectedRoute(){const {session,isAdmin,loading}=useAuth();if(loading)return <div className="status">Verificando acesso…</div>;if(!session)return <Navigate to="/admin/login" replace/>;if(!isAdmin)return <main className="center"><h1>Acesso não autorizado</h1><p>Esta conta não possui permissão administrativa.</p></main>;return <Outlet/>}
