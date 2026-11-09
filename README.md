@@ -70,6 +70,10 @@ npm run build
 
 Os testes locais cobrem utilitários de WhatsApp, total do pedido, favoritos e carrinho. Login, CRUD, upload e RLS precisam ainda ser validados contra o projeto Supabase real, pois dependem de credenciais e usuários de teste.
 
-## GitHub e Vercel
+## GitHub, Render e Vercel
 
-O repositório esperado é `https://github.com/luismfrk/mimos-presentes.git`. Para publicar na Vercel, importe o repositório, use `npm run build`, diretório de saída `dist` e cadastre as quatro variáveis listadas em `.env.example`. O `vercel.json` redireciona rotas da SPA para `index.html`. Um push na branch conectada inicia o deploy quando a integração da Vercel estiver habilitada.
+O repositório é `https://github.com/luismfrk/mimos-presentes.git`.
+
+Para publicar no Render, crie um Blueprint usando o `render.yaml` da raiz. O serviço usa `npm ci && npm run build`, publica `dist`, redireciona rotas da SPA para `index.html` e solicita `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` durante a criação. Depois de conectado à branch `main`, novos pushes iniciam deploys automáticos.
+
+Para publicar na Vercel, importe o repositório, use `npm run build`, diretório de saída `dist` e cadastre as quatro variáveis listadas em `.env.example`. O `vercel.json` redireciona rotas da SPA para `index.html`.
