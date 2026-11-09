@@ -12,6 +12,8 @@ Catálogo digital e painel administrativo da Mimo Presentes — “Pequenos mimo
 - Dashboard e gerenciamento de produtos, categorias e imagens.
 - PostgreSQL com constraints, índices, RLS e políticas de Storage.
 
+Os ícones da interface utilizam a biblioteca [Flaticon UIcons](https://www.flaticon.com/uicons).
+
 ## Execução local
 
 Requer Node.js 20 ou superior.
