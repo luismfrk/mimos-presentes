@@ -38,12 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         return;
       }
-      const { data, error } = await supabase
-        .from("admin_users")
-        .select("user_id")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-      setAdmin(!error && Boolean(data));
+      const { data, error } = await supabase.rpc("is_admin");
+      setAdmin(!error && data === true);
       setLoading(false);
     })();
   }, [session]);
@@ -61,18 +57,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             password: p,
           });
           if (error) throw new Error("E-mail ou senha inválidos.");
-        const { data: admin, error: adminError } = await supabase
-          .from("admin_users")
-          .select("user_id")
-          .eq("user_id", authData.user.id)
-          .maybeSingle();
+        const { data: admin, error: adminError } =
+          await supabase.rpc("is_admin");
         if (adminError) {
           await supabase.auth.signOut();
           throw new Error(
             "Login aceito, mas não foi possível verificar a permissão administrativa.",
           );
         }
-        if (!admin) {
+        if (admin !== true) {
           await supabase.auth.signOut();
           throw new Error("Este usuário ainda não está autorizado como administrador.");
         }
