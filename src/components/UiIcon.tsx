@@ -1,0 +1,2 @@
+type IconName = "gift" | "heart" | "shopping-bag" | "menu-burger" | "cross" | "search" | "filter" | "arrow-right" | "user" | "settings" | "sign-out-alt" | "dashboard" | "folder" | "plus" | "edit" | "trash" | "eye" | "eye-crossed" | "sign-in-alt" | "minus" | "picture" | "save" | "star" | "sparkles" | "box-open" | "instagram" | "whatsapp";
+export function UiIcon({name,label}:{name:IconName;label?:string}){const brand=name==="instagram"||name==="whatsapp";return <i className={`fi ${brand?"fi-brands":"fi-rr"}-${name}`} aria-hidden={!label} aria-label={label}/>}

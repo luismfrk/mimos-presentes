@@ -1,7 +1,8 @@
-import { Eye, EyeOff, Gift, LogIn } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { UiIcon } from "../components/UiIcon";
+import logo from "../assets/mimo-logo.png";
 export function Login() {
   const { signIn, session, isAdmin } = useAuth(),
     [email, setEmail] = useState(""),
@@ -26,7 +27,7 @@ export function Login() {
     <section className="login">
       <form onSubmit={submit}>
         <div className="login-logo">
-          <Gift />
+          <img src={logo} alt="Mimo Presentes" />
           <h1>Bem-vinda à Mimo</h1>
           <p>Entre para cuidar dos seus mimos.</p>
         </div>
@@ -51,13 +52,13 @@ export function Login() {
               autoComplete="current-password"
             />
             <button type="button" onClick={() => setShow(!show)}>
-              {show ? <EyeOff /> : <Eye />}
+              {show ? <UiIcon name="eye-crossed" /> : <UiIcon name="eye" />}
             </button>
           </div>
         </label>
         {error && <div className="form-error">{error}</div>}
         <button className="button" disabled={busy}>
-          <LogIn />
+          <UiIcon name="sign-in-alt" />
           {busy ? "Entrando…" : "Entrar no painel"}
         </button>
         <small>O acesso é exclusivo para administradores autorizados.</small>

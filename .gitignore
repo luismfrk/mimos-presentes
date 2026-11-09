@@ -5,6 +5,8 @@ coverage
 .env.local
 .env.*.local
 *.log
+.playwright-cli/
+output/
 .DS_Store
 .idea
 .vscode/*
