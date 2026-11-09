@@ -24,7 +24,7 @@ services:
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
         sync: false
-      - key: VITE_WHATSAPP_URL
-        value: https://api.whatsapp.com/message/S4EFURZFTKSAA1?autoload=1&app_absent=0&utm_source=ig
+      - key: VITE_WHATSAPP_NUMBER
+        value: 554288810920
       - key: VITE_INSTAGRAM_URL
         value: https://www.instagram.com/mimoo_presentes/

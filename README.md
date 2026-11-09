@@ -46,7 +46,7 @@ O catálogo público só lê categorias ativas, produtos publicados e imagens as
 Os links oficiais ficam em variáveis para permitir troca sem alteração de código:
 
 ```env
-VITE_WHATSAPP_URL=https://api.whatsapp.com/message/S4EFURZFTKSAA1?autoload=1&app_absent=0&utm_source=ig
+VITE_WHATSAPP_NUMBER=554288810920
 VITE_INSTAGRAM_URL=https://www.instagram.com/mimoo_presentes/
 ```
 
