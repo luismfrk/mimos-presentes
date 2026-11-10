@@ -86,7 +86,7 @@ export function AdminProducts() {
                     <b>{p.name}</b>
                     <small>{p.category?.name}</small>
                   </td>
-                  <td>{money(p.price)}</td>
+                  <td>{p.price === null ? "Sob consulta" : money(p.price)}</td>
                   <td>
                     <button
                       className="toggle"

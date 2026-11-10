@@ -1,4 +1,276 @@
-import {ArrowLeft,ImagePlus,Save,X} from 'lucide-react';import {FormEvent,useEffect,useState} from 'react';import {Link,useNavigate,useParams} from 'react-router-dom';import {slugify} from '../lib/utils';import {supabase} from '../lib/supabase';import {getCategories,getProducts} from '../services/catalog';import type {Category} from '../types'
-type Form={name:string;description:string;price:string;category_id:string;published:boolean;available:boolean;featured:boolean;is_new:boolean;customizable:boolean}
-const empty:Form={name:'',description:'',price:'',category_id:'',published:true,available:true,featured:false,is_new:true,customizable:false}
-export function ProductForm(){const {id}=useParams(),nav=useNavigate(),[form,setForm]=useState(empty),[cats,setCats]=useState<Category[]>([]),[files,setFiles]=useState<File[]>([]),[existing,setExisting]=useState<{id:string;storage_path:string;url?:string}[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[dirty,setDirty]=useState(false);useEffect(()=>{getCategories().then(setCats);if(id)getProducts(false).then(ps=>{const p=ps.find(x=>x.id===id);if(p){setForm({name:p.name,description:p.description,price:String(p.price),category_id:p.category_id,published:p.published,available:p.available,featured:p.featured,is_new:p.is_new,customizable:p.customizable});setExisting(p.images||[])}})},[id]);useEffect(()=>{const guard=(e:BeforeUnloadEvent)=>{if(dirty)e.preventDefault()};addEventListener('beforeunload',guard);return()=>removeEventListener('beforeunload',guard)},[dirty]);const set=<K extends keyof Form>(key:K,value:Form[K])=>{setDirty(true);setForm(f=>({...f,[key]:value}))};async function submit(e:FormEvent){e.preventDefault();if(!supabase)return setError('Configure o Supabase antes de salvar produtos.');if(!form.name.trim()||Number(form.price)<=0||!form.category_id)return setError('Preencha nome, preço válido e categoria.');setBusy(true);setError('');try{const payload={...form,price:Number(form.price),slug:slugify(form.name)};let productId=id;if(id){const {error}=await supabase.from('products').update(payload).eq('id',id);if(error)throw error}else{const {data,error}=await supabase.from('products').insert(payload).select('id').single();if(error)throw error;productId=data.id}for(let n=0;n<files.length;n++){const file=files[n];if(file.size>5*1024*1024)throw new Error('Cada imagem deve ter no máximo 5 MB.');if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('Use imagens JPEG, PNG ou WebP.');const ext=file.name.split('.').pop();const path=`${productId}/${crypto.randomUUID()}.${ext}`;const {error:up}=await supabase.storage.from('product-images').upload(path,file,{contentType:file.type});if(up)throw up;const {error:db}=await supabase.from('product_images').insert({product_id:productId,storage_path:path,sort_order:existing.length+n});if(db)throw db}setDirty(false);nav('/admin/produtos')}catch(e){setError(e instanceof Error?e.message:'Não foi possível salvar o produto.')}finally{setBusy(false)}}async function removeImage(image:{id:string;storage_path:string}){if(!supabase||!confirm('Remover esta imagem?'))return;await supabase.from('product_images').delete().eq('id',image.id);await supabase.storage.from('product-images').remove([image.storage_path]);setExisting(v=>v.filter(x=>x.id!==image.id))}return <section className="admin-page"><Link className="back" to="/admin/produtos"><ArrowLeft/> Produtos</Link><div className="admin-heading"><div><small>{id?'Edição':'Cadastro'}</small><h1>{id?'Editar mimo':'Adicionar novo mimo'}</h1></div></div><form className="product-form" onSubmit={submit}><div className="form-panel"><h2>Informações principais</h2><label className="field">Nome<input value={form.name} onChange={e=>set('name',e.target.value)} required maxLength={120}/></label><label className="field">Descrição<textarea value={form.description} onChange={e=>set('description',e.target.value)} required rows={5}/></label><div className="form-grid"><label className="field">Preço (R$)<input value={form.price} onChange={e=>set('price',e.target.value)} type="number" min="0.01" step="0.01" required/></label><label className="field">Categoria<select value={form.category_id} onChange={e=>set('category_id',e.target.value)} required><option value="">Selecione…</option>{cats.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label></div><h2>Imagens</h2><label className="upload"><ImagePlus/><span>Selecionar imagens<small>JPEG, PNG ou WebP • até 5 MB</small></span><input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>{setDirty(true);setFiles(Array.from(e.target.files||[]))}}/></label><div className="previews">{existing.map(i=><div key={i.id}><img src={i.url||i.storage_path}/><button type="button" onClick={()=>removeImage(i)}><X/></button></div>)}{files.map((f,i)=><div key={i}><img src={URL.createObjectURL(f)}/></div>)}</div></div><aside className="form-panel"><h2>Publicação</h2>{(['published','available','featured','is_new','customizable'] as const).map(k=><label className="check" key={k}><input type="checkbox" checked={form[k]} onChange={e=>set(k,e.target.checked)}/><span>{{published:'Publicado',available:'Disponível',featured:'Em destaque',is_new:'Novidade',customizable:'Permite personalização'}[k]}</span></label>)}{error&&<div className="form-error">{error}</div>}<button className="button" disabled={busy}><Save/>{busy?'Salvando…':'Salvar mimo'}</button></aside></form></section>}
+import { ArrowLeft, ImagePlus, Save, X } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { slugify } from "../lib/utils";
+import { supabase } from "../lib/supabase";
+import { getCategories, getProducts } from "../services/catalog";
+import type { Category } from "../types";
+type Form = {
+  name: string;
+  description: string;
+  price: string;
+  category_id: string;
+  published: boolean;
+  available: boolean;
+  featured: boolean;
+  is_new: boolean;
+  customizable: boolean;
+};
+const empty: Form = {
+  name: "",
+  description: "",
+  price: "",
+  category_id: "",
+  published: true,
+  available: true,
+  featured: false,
+  is_new: true,
+  customizable: false,
+};
+export function ProductForm() {
+  const { id } = useParams(),
+    nav = useNavigate(),
+    [form, setForm] = useState(empty),
+    [cats, setCats] = useState<Category[]>([]),
+    [files, setFiles] = useState<File[]>([]),
+    [existing, setExisting] = useState<
+      { id: string; storage_path: string; url?: string }[]
+    >([]),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    getCategories().then(setCats);
+    if (id)
+      getProducts(false).then((ps) => {
+        const p = ps.find((x) => x.id === id);
+        if (p) {
+          setForm({
+            name: p.name,
+            description: p.description,
+            price: p.price === null ? "" : String(p.price),
+            category_id: p.category_id,
+            published: p.published,
+            available: p.available,
+            featured: p.featured,
+            is_new: p.is_new,
+            customizable: p.customizable,
+          });
+          setExisting(p.images || []);
+        }
+      });
+  }, [id]);
+  useEffect(() => {
+    const guard = (e: BeforeUnloadEvent) => {
+      if (dirty) e.preventDefault();
+    };
+    addEventListener("beforeunload", guard);
+    return () => removeEventListener("beforeunload", guard);
+  }, [dirty]);
+  const set = <K extends keyof Form>(key: K, value: Form[K]) => {
+    setDirty(true);
+    setForm((f) => ({ ...f, [key]: value }));
+  };
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!supabase)
+      return setError("Configure o Supabase antes de salvar produtos.");
+    if (
+      !form.name.trim() ||
+      (form.price !== "" && Number(form.price) <= 0) ||
+      !form.category_id
+    )
+      return setError("Preencha nome, preço válido ou em branco e categoria.");
+    setBusy(true);
+    setError("");
+    try {
+      const payload = {
+        ...form,
+        price: form.price === "" ? null : Number(form.price),
+        slug: slugify(form.name),
+      };
+      let productId = id;
+      if (id) {
+        const { error } = await supabase
+          .from("products")
+          .update(payload)
+          .eq("id", id);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("products")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (error) throw error;
+        productId = data.id;
+      }
+      for (let n = 0; n < files.length; n++) {
+        const file = files[n];
+        if (file.size > 5 * 1024 * 1024)
+          throw new Error("Cada imagem deve ter no máximo 5 MB.");
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type))
+          throw new Error("Use imagens JPEG, PNG ou WebP.");
+        const ext = file.name.split(".").pop();
+        const path = `${productId}/${crypto.randomUUID()}.${ext}`;
+        const { error: up } = await supabase.storage
+          .from("product-images")
+          .upload(path, file, { contentType: file.type });
+        if (up) throw up;
+        const { error: db } = await supabase
+          .from("product_images")
+          .insert({
+            product_id: productId,
+            storage_path: path,
+            sort_order: existing.length + n,
+          });
+        if (db) throw db;
+      }
+      setDirty(false);
+      nav("/admin/produtos");
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Não foi possível salvar o produto.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function removeImage(image: { id: string; storage_path: string }) {
+    if (!supabase || !confirm("Remover esta imagem?")) return;
+    await supabase.from("product_images").delete().eq("id", image.id);
+    await supabase.storage.from("product-images").remove([image.storage_path]);
+    setExisting((v) => v.filter((x) => x.id !== image.id));
+  }
+  return (
+    <section className="admin-page">
+      <Link className="back" to="/admin/produtos">
+        <ArrowLeft /> Produtos
+      </Link>
+      <div className="admin-heading">
+        <div>
+          <small>{id ? "Edição" : "Cadastro"}</small>
+          <h1>{id ? "Editar mimo" : "Adicionar novo mimo"}</h1>
+        </div>
+      </div>
+      <form className="product-form" onSubmit={submit}>
+        <div className="form-panel">
+          <h2>Informações principais</h2>
+          <label className="field">
+            Nome
+            <input
+              value={form.name}
+              onChange={(e) => set("name", e.target.value)}
+              required
+              maxLength={120}
+            />
+          </label>
+          <label className="field">
+            Descrição
+            <textarea
+              value={form.description}
+              onChange={(e) => set("description", e.target.value)}
+              required
+              rows={5}
+            />
+          </label>
+          <div className="form-grid">
+            <label className="field">
+              Preço (R$) — opcional
+              <input
+                value={form.price}
+                onChange={(e) => set("price", e.target.value)}
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="Deixe em branco para preço sob consulta"
+              />
+            </label>
+            <label className="field">
+              Categoria
+              <select
+                value={form.category_id}
+                onChange={(e) => set("category_id", e.target.value)}
+                required
+              >
+                <option value="">Selecione…</option>
+                {cats.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <h2>Imagens</h2>
+          <label className="upload">
+            <ImagePlus />
+            <span>
+              Selecionar imagens<small>JPEG, PNG ou WebP • até 5 MB</small>
+            </span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={(e) => {
+                setDirty(true);
+                setFiles(Array.from(e.target.files || []));
+              }}
+            />
+          </label>
+          <div className="previews">
+            {existing.map((i) => (
+              <div key={i.id}>
+                <img src={i.url || i.storage_path} />
+                <button type="button" onClick={() => removeImage(i)}>
+                  <X />
+                </button>
+              </div>
+            ))}
+            {files.map((f, i) => (
+              <div key={i}>
+                <img src={URL.createObjectURL(f)} />
+              </div>
+            ))}
+          </div>
+        </div>
+        <aside className="form-panel">
+          <h2>Publicação</h2>
+          {(
+            [
+              "published",
+              "available",
+              "featured",
+              "is_new",
+              "customizable",
+            ] as const
+          ).map((k) => (
+            <label className="check" key={k}>
+              <input
+                type="checkbox"
+                checked={form[k]}
+                onChange={(e) => set(k, e.target.checked)}
+              />
+              <span>
+                {
+                  {
+                    published: "Publicado",
+                    available: "Disponível",
+                    featured: "Em destaque",
+                    is_new: "Novidade",
+                    customizable: "Permite personalização",
+                  }[k]
+                }
+              </span>
+            </label>
+          ))}
+          {error && <div className="form-error">{error}</div>}
+          <button className="button" disabled={busy}>
+            <Save />
+            {busy ? "Salvando…" : "Salvar mimo"}
+          </button>
+        </aside>
+      </form>
+    </section>
+  );
+}

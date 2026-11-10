@@ -89,14 +89,16 @@ export function Catalog() {
             p.name.toLowerCase().includes(query.toLowerCase()) &&
             (!cat || p.category_id === cat),
         )
-        .sort((a, b) =>
-          sort === "asc"
-            ? a.price - b.price
-            : sort === "desc"
-              ? b.price - a.price
-              : new Date(b.created_at).getTime() -
-                new Date(a.created_at).getTime(),
-        ),
+        .sort((a, b) => {
+          if (sort === "new")
+            return (
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime()
+            );
+          if (a.price === null) return 1;
+          if (b.price === null) return -1;
+          return sort === "asc" ? a.price - b.price : b.price - a.price;
+        }),
     [products, query, cat, sort],
   );
   return (
