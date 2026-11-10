@@ -77,16 +77,19 @@ export function ProductForm() {
       return setError("Configure o Supabase antes de salvar produtos.");
     if (
       !form.name.trim() ||
-      (form.price !== "" && Number(form.price) <= 0) ||
+      (form.price !== "" && Number(form.price) < 0) ||
       !form.category_id
     )
-      return setError("Preencha nome, preço válido ou em branco e categoria.");
+      return setError("Preencha nome, preço válido ou zero e categoria.");
     setBusy(true);
     setError("");
     try {
       const payload = {
         ...form,
-        price: form.price === "" ? null : Number(form.price),
+        price:
+          form.price === "" || Number(form.price) === 0
+            ? null
+            : Number(form.price),
         slug: slugify(form.name),
       };
       let productId = id;
@@ -181,9 +184,9 @@ export function ProductForm() {
                 value={form.price}
                 onChange={(e) => set("price", e.target.value)}
                 type="number"
-                min="0.01"
+                min="0"
                 step="0.01"
-                placeholder="Deixe em branco para preço sob consulta"
+                placeholder="Use zero ou deixe em branco para preço sob consulta"
               />
             </label>
             <label className="field">
